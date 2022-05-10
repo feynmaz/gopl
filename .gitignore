@@ -19,3 +19,8 @@
 
 # Go workspace file
 go.work
+
+# Miscellaneous
+tmp
+.idea
+.vscode
