@@ -2,27 +2,45 @@ package main
 
 import (
 	"fmt"
+	"io"
+	"io/ioutil"
+	"net/http"
+	"time"
 )
 
+var urls []string = []string{
+	"https://pkg.go.dev/",
+	"https://go.dev/play/",
+	"https://go.dev/blog/",
+	"https://go.dev/solutions/#case-studies",
+}
+
 func main() {
-	fmt.Println(IsPalindrome_1("f"))
+	start := time.Now()
+	ch := make(chan string)
+	for _, url := range urls {
+		go fetch(url, ch)
+	}
+	for range urls {
+		fmt.Println(<-ch)
+	}
+	fmt.Printf("%.2fs elapsed\n", time.Since(start).Seconds())
 }
 
-func IsPalindrome_1(s string) bool {
-	for i := 0; i < len(s); i++ {
-		j := len(s) - 1 - i
-		if s[i] != s[j] {
-			return false
-		}
+func fetch(url string, ch chan string) {
+	start := time.Now()
+	resp, err := http.Get(url)
+	if err != nil {
+		ch <- fmt.Sprint(err)
+		return
 	}
-	return true
-}
-
-func IsPalindrome_2(s string) bool {
-	res := make([]byte, 0, len(s))
-	for i := len(s) - 1; i >= 0; i-- {
-		res = append(res, s[i])
+	nbytes, err := io.Copy(ioutil.Discard, resp.Body)
+	resp.Body.Close()
+	if err != nil {
+		ch <- fmt.Sprintf("while reading %s: %v", url, err)
+		return
 	}
+	secs := time.Since(start).Seconds()
+	ch <- fmt.Sprintf("%.2fs %7d %s", secs, nbytes, url)
 
-	return s == string(res)
 }
